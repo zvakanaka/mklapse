@@ -1,0 +1,31 @@
+{
+  "name": "lapser",
+  "version": "1.0.0",
+  "description": "images -> time lapse",
+  "main": "lapser.js",
+  "scripts": {
+    "start": "node bin/cli.js",
+    "test": "node test/test.js"
+  },
+  "bin": {
+    "lapser": "./bin/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zvakanaka/lapser.git"
+  },
+  "keywords": [
+    "video",
+    "ffmpeg",
+    "command",
+    "line",
+    "time",
+    "lapse"
+  ],
+  "author": "Adam Quinton",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zvakanaka/lapser/issues"
+  },
+  "homepage": "https://github.com/zvakanaka/lapser#readme"
+}
