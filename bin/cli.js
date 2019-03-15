@@ -5,12 +5,12 @@ async function init() {
   if (process.argv.length >= 3) {
     try {
       const inputArgs = process.argv.slice(2);
-      const {stdout, stderr} = await mklapse(inputArgs);
+      await mklapse(inputArgs);
     } catch (e) {
       console.error(e);
     }
   } else {
-    console.error('Not enough arguments\nUsage:\n\tmklapse in-file.mov [outfile.gif]');
+    console.error('Not enough arguments\nUsage:\n\tmklapse [video | trails | zoom | play]');
   }
 }
 

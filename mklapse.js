@@ -1,5 +1,6 @@
 const exec = require('util').promisify(require('child_process').exec);
 const sequentialPromiseAll = require('./lib/sequentialPromiseAll');
+const fileParts = require('./lib/fileParts');
 const fs = require('fs');
 const {promisify} = require('util');
 const readdir = promisify(fs.readdir);
@@ -16,6 +17,12 @@ async function mklapse(inputArgs) {
   const validFiles = files.filter(fileName => {
     return fileName.toLowerCase().endsWith('.jpg');
   });
+  if (operationType === 'video') mkvideo(validFiles);
+  else if (operationType === 'play') play();
+  else mkphotos({validFiles, operationType});
+};
+
+async function mkphotos({validFiles, operationType}) {
   await clean();
   await mkdir(DEFUALT_TEMP_DIR);
   await exec(`cp ${validFiles[0]} ${DEFUALT_TEMP_DIR}/IMG_0000.jpg`);
@@ -54,7 +61,19 @@ async function mklapse(inputArgs) {
   });
   process.stdout.clearLine();
   process.stdout.cursorTo(0);
-};
+}
+
+async function mkvideo(validFiles) {
+  const {ext: extension, fileWithoutExt: filePrefix} = fileParts(validFiles[0]);
+  const [, startNumber] = filePrefix.match(/(\d{4})/);
+  const ffmpegCommand = `ffmpeg -y -framerate 30 -start_number "${startNumber}" -i IMG_%04d.${extension} -s:v 1080x720 -c:v libx264 -pix_fmt yuv420p -r 30 $(basename $(pwd)).mp4`;
+  await exec(ffmpegCommand);
+}
+
+async function play() {
+  const ffplayCommand = `ffplay -loop 0 $(basename $(pwd)).mp4`;
+  await exec(ffplayCommand);
+}
 
 async function mkdir(dirname) {
   const outputObj = await exec(`mkdir -p ${dirname}`);
