@@ -19,17 +19,38 @@ async function mklapse(inputArgs) {
   const options = {};
   const optionsConfig = [
     {operationType: 'trails'},
-    {operationType: 'zoom', name: 'delta', alias: 'd', defaultValue: 1.001},
+    {operationType: 'zoom', name: 'delta', alias: 'd', defaultValue: 1.001, type: Number},
     {operationType: 'play'},
-    {operationType: 'video', name: 'framerate', alias: 'r', defaultValue: 30}
+    {operationType: 'video', name: 'framerate', alias: 'r', defaultValue: 30, type: Number}
   ];
+  // set up defaults
+  optionsConfig
+    .filter(c => c.operationType === operationType)
+    .forEach((c) => {
+      options[c.name] = c.defaultValue;
+    });
+  // overlay command line arguments onto the config
   if (inputArgs.length > 1) {
-    optionsConfig
-      .filter(c => c.operationType === operationType)
-      .forEach((c) => {
-        options[c.name] = defaultValue;
-      });
+    const matchingOptionsConfigs = optionsConfig.filter(c => c.operationType === operationType);
+    const args = inputArgs.slice(1); // remove operationType
+    let giveMeABreak = false;
+    args.forEach((cur, i) => {
+      // --delta value => name: delta
+      if (!giveMeABreak) {
+        const refType = cur.startsWith('--') ? 'name' : cur.startsWith('-') ? 'alias' : false; // name or alias
+        if (!refType) throw new Error(`Unknown command line argument, '${cur}'`);
+        const refName = cur.startsWith('--') ? cur.substr(2) : cur.startsWith('-') ? cur.substr(1) : cur;
+        if (refType) {
+          const matchingConfig = matchingOptionsConfigs.find(c => c[refType] === refName);
+          if (!matchingConfig) throw new Error(`Unknown command line argument, '${cur}'`);
+          const type =  matchingConfig.type ? matchingConfig.type : (val) => val;
+          options[refName] = type(args[i + 1]);
+          giveMeABreak = true;
+        }
+      } else giveMeABreak = false;
+    });
   }
+  console.log('options', options);
   if (operationType === 'video') mkvideo(validFiles, options);
   else if (operationType === 'play') play();
   else if (optionsConfig.map(c => c.operationType).includes(operationType)) mkphotos({validFiles, operationType, options});
