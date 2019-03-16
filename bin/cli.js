@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 const mklapse = require('../mklapse.js');
 
+const optionDefinitions = [
+  { name: 'verbose', alias: 'v', type: Boolean },
+  { name: 'src', type: String, multiple: true, defaultOption: true },
+  { name: 'framerate', alias: 'r', type: Number }
+];
+
 async function init() {
   if (process.argv.length >= 3) {
     try {

@@ -6,7 +6,6 @@ const {promisify} = require('util');
 const readdir = promisify(fs.readdir);
 
 const DEFUALT_TEMP_DIR = 'mklapse';
-const ZOOM_DELTA = 1.0025;
 const pwd = './';
 
 module.exports = mklapse;
@@ -17,12 +16,27 @@ async function mklapse(inputArgs) {
   const validFiles = files.filter(fileName => {
     return fileName.toLowerCase().endsWith('.jpg');
   });
-  if (operationType === 'video') mkvideo(validFiles);
+  const options = {};
+  const optionsConfig = [
+    {operationType: 'trails'},
+    {operationType: 'zoom', name: 'delta', alias: 'd', defaultValue: 1.001},
+    {operationType: 'play'},
+    {operationType: 'video', name: 'framerate', alias: 'r', defaultValue: 30}
+  ];
+  if (inputArgs.length > 1) {
+    optionsConfig
+      .filter(c => c.operationType === operationType)
+      .forEach((c) => {
+        options[c.name] = defaultValue;
+      });
+  }
+  if (operationType === 'video') mkvideo(validFiles, options);
   else if (operationType === 'play') play();
-  else mkphotos({validFiles, operationType});
+  else if (optionsConfig.map(c => c.operationType).includes(operationType)) mkphotos({validFiles, operationType, options});
+  else console.log('invalid parameter(s) specified');
 };
 
-async function mkphotos({validFiles, operationType}) {
+async function mkphotos({validFiles, operationType, options}) {
   await clean();
   await mkdir(DEFUALT_TEMP_DIR);
   await exec(`cp ${validFiles[0]} ${DEFUALT_TEMP_DIR}/IMG_0000.jpg`);
@@ -39,15 +53,15 @@ async function mkphotos({validFiles, operationType}) {
     switch (operationType) {
       case 'zoom':
         command = `convert ${inputFile} -resize ${width}x${height}^ -gravity center -extent ${originalWidth}x${originalHeight} ${outputFile}`;
+        width *= options.delta;
+        height *= options.delta;
         break;
       case 'trails':
         command = `convert ${DEFUALT_TEMP_DIR}/IMG_${last}.jpg ${inputFile} -gravity center -compose lighten -composite -format jpg ${outputFile}`;
         break;
       default:
-        command = `convert ${inputFile} -resize ${width}x${height}^ -gravity center -extent ${originalWidth}x${originalHeight} ${outputFile}`;
+        throw new Error(`Invalid operation type specified, '${operationType}'`);
     }
-    width *= ZOOM_DELTA;
-    height *= ZOOM_DELTA;
     return command;
   });
   let commandIndex = 0;
@@ -61,12 +75,13 @@ async function mkphotos({validFiles, operationType}) {
   });
   process.stdout.clearLine();
   process.stdout.cursorTo(0);
+  console.log();
 }
 
-async function mkvideo(validFiles) {
+async function mkvideo(validFiles, options) {
   const {ext: extension, fileWithoutExt: filePrefix} = fileParts(validFiles[0]);
   const [, startNumber] = filePrefix.match(/(\d{4})/);
-  const ffmpegCommand = `ffmpeg -y -framerate 30 -start_number "${startNumber}" -i IMG_%04d.${extension} -s:v 1080x720 -c:v libx264 -pix_fmt yuv420p -r 30 $(basename $(pwd)).mp4`;
+  const ffmpegCommand = `ffmpeg -y -framerate ${options.framerate} -start_number "${startNumber}" -i IMG_%04d.${extension} -s:v 1080x720 -c:v libx264 -pix_fmt yuv420p -r ${options.framerate} $(basename $(pwd)).mp4`;
   await exec(ffmpegCommand);
 }
 
