@@ -27,5 +27,8 @@
   "bugs": {
     "url": "https://github.com/zvakanaka/mklapse/issues"
   },
-  "homepage": "https://github.com/zvakanaka/mklapse#readme"
+  "homepage": "https://github.com/zvakanaka/mklapse#readme",
+  "dependencies": {
+    "bar-charts": "^1.0.2"
+  }
 }
