@@ -9,6 +9,8 @@ const readdir = promisify(fs.readdir);
 const understand = require('./lib/understand');
 const DEFUALT_TEMP_DIR = 'mklapse';
 const pwd = './';
+const scriptPath = require('path').dirname(require.main.filename);
+const BLANK = '⠀'; // braille blank emoji (because jstrace-bars removes leading spaces)
 
 module.exports = mklapse;
 
@@ -21,6 +23,7 @@ async function mklapse(inputArgs) {
     {command: 'trails'},
     {command: 'zoom', name: 'delta', alias: 'd', defaultValue: 1.001, type: Number},
     {command: 'resize', name: 'percentage', alias: 'p', defaultValue: '25%', type: String},
+    {command: 'fred', name: 'script', alias: 's', type: String},
     {command: 'play'},
     {command: 'video', name: 'framerate', alias: 'r', defaultValue: 30, type: Number}
   ];
@@ -39,14 +42,14 @@ async function mkphotos({validFiles, options}) {
   await mkdir(DEFUALT_TEMP_DIR);
   await exec(`cp ${validFiles[0]} ${DEFUALT_TEMP_DIR}/IMG_0000.jpg`);
   let last = '0000';
-  let count = last;
+  let countString = last;
   let [width, height] = await getPhotoDimensions(validFiles[0]);
   const originalWidth = width;
   const originalHeight = height;
   const commandsArray = validFiles.map(inputFile => { // build array of commands
-    last = count;
-    count = `${Number(count) + 1}`.padStart(4, '0');
-    const outputFile = `${DEFUALT_TEMP_DIR}/IMG_${count}.jpg`;
+    last = countString;
+    countString = `${Number(countString) + 1}`.padStart(4, '0');
+    const outputFile = `${DEFUALT_TEMP_DIR}/IMG_${countString}.jpg`;
     let command;
     switch (options.command) {
       case 'zoom':
@@ -60,6 +63,10 @@ async function mkphotos({validFiles, options}) {
       case 'resize':
         command = `convert -resize ${options.percentage} ${inputFile} ${outputFile}`;
         break;
+      case 'fred':
+      // ./clip -c sb -l 1% -h 1% IMG_1952.JPG clipped.jpg
+        command = `bash ${scriptPath}/../lib/fred/${options.script} ${inputFile} ${outputFile}`;
+        break;
       default:
         throw new Error(`Invalid operation type specified, '${options.command}'`);
     }
@@ -67,14 +74,15 @@ async function mkphotos({validFiles, options}) {
   });
   let commandIndex = 0;
 
-  process.stdout.write(`1/${commandsArray.length}`);
-  sequentialPromiseAll(exec, [commandsArray[0]], commandsArray.length, (args, lastResponse) => {
+  let count = 0.01;
+  process.stdout.write(barChart([{label: `${`${parseInt(commandIndex, 10) + 1}`.padStart(`${commandsArray.length}`.length, BLANK)}/${commandsArray.length}`, count}], {percentages: true}));
+
+  await sequentialPromiseAll(exec, [commandsArray[0]], commandsArray.length, (args, lastResponse) => {
     if (args[0]) args[0] = commandsArray[++commandIndex];
     process.stdout.clearLine();
     process.stdout.cursorTo(0);
-    const count = parseInt(commandIndex, 10) / commandsArray.length * 100;
-    const blank = '⠀'; // braille blank emoji (because jstrace-bars removes leading spaces)
-    const output = barChart([{label: `${`${parseInt(commandIndex, 10) + 1}`.padStart(`${commandsArray.length}`.length, blank)}/${commandsArray.length}`, count}], {percentages: true});
+    count = parseInt(commandIndex, 10) / commandsArray.length * 100;
+    const output = barChart([{label: `${`${parseInt(commandIndex, 10) + 1}`.padStart(`${commandsArray.length}`.length, BLANK)}/${commandsArray.length}`, count}], {percentages: true});
     process.stdout.write(output);
   });
   process.stdout.clearLine();
@@ -101,8 +109,7 @@ async function mkvideo(validFiles, options) {
         process.stdout.clearLine();
         process.stdout.cursorTo(0);
         const count = parseInt(frame, 10) / validFiles.length * 100;
-        const blank = '⠀'; // braille blank emoji (because jstrace-bars removes leading spaces)
-        const output = barChart([{label: `${`${parseInt(frame, 10) + 1}`.padStart(`${validFiles.length}`.length, blank)}/${validFiles.length}`, count}], {percentages: true});
+        const output = barChart([{label: `${`${parseInt(frame, 10) + 1}`.padStart(`${validFiles.length}`.length, BLANK)}/${validFiles.length}`, count}], {percentages: true});
         process.stdout.write(output); // end the line
       }
     });
