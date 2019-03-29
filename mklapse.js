@@ -64,7 +64,6 @@ async function mkphotos({validFiles, options}) {
         command = `convert -resize ${options.percentage} ${inputFile} ${outputFile}`;
         break;
       case 'fred':
-      // ./clip -c sb -l 1% -h 1% IMG_1952.JPG clipped.jpg
         command = `bash ${scriptPath}/../lib/fred/${options.script} ${inputFile} ${outputFile}`;
         break;
       default:
