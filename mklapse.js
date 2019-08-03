@@ -1,10 +1,10 @@
 const {spawn} = require('child_process');
 const exec = require('util').promisify(require('child_process').exec);
-const sequentialPromiseAll = require('sequential-promise-all');
 const barChart = require('bar-charts');
 const fileParts = require('./lib/fileParts');
 const filesInDir = require('files-in-dir');
 const understand = require('./lib/understand');
+const sequentialCommands = require('./lib/sequentialCommands');
 const DEFUALT_TEMP_DIR = 'mklapse';
 const pwd = './';
 const scriptPath = require('path').dirname(require.main.filename);
@@ -75,24 +75,9 @@ async function mkphotos({validFiles, options}) {
     }
     return command;
   });
-  let commandIndex = 0;
 
-  let count = 0.01;
-  process.stdout.write(barChart([{label: `${`${parseInt(commandIndex, 10) + 1}`.padStart(`${commandsArray.length}`.length, BLANK)}/${commandsArray.length}`, count}], {percentages: true}));
-
-  await sequentialPromiseAll(exec, [commandsArray[0]], commandsArray.length, (args, lastResponse) => {
-    if (args[0]) args[0] = commandsArray[++commandIndex];
-    process.stdout.clearLine();
-    process.stdout.cursorTo(0);
-    count = parseInt(commandIndex, 10) / commandsArray.length * 100;
-    const output = barChart([{label: `${`${parseInt(commandIndex, 10) + 1}`.padStart(`${commandsArray.length}`.length, BLANK)}/${commandsArray.length}`, count}], {percentages: true});
-    process.stdout.write(output);
-  });
-  process.stdout.clearLine();
-  process.stdout.cursorTo(0);
-  process.stdout.write(); // end the line
-  console.log();
-  console.log(`${commandIndex + 1}/${commandsArray.length}`);
+  await sequentialCommands(commandsArray);
+  console.log(`${commandsArray.length}/${commandsArray.length}`);
 }
 
 // async function once({validFiles, options}) {
@@ -128,7 +113,6 @@ async function mkvideo(validFiles, options) {
         process.stdout.write(output); // end the line
       }
     });
-
 
     ffmpeg.stdout.on('end', function(data) {
      data && console.log('end', data);
@@ -175,7 +159,7 @@ async function getPhotoDimensions(fileName) {
 
 async function clean() {
   try {
-    console.log(`removing temp dir '${DEFUALT_TEMP_DIR}'`);
+    console.log(`Removing temp dir '${DEFUALT_TEMP_DIR}'`);
     const rmOutputObj = await exec(`rm -r ${DEFUALT_TEMP_DIR}`);
   } catch (e) {
     console.error(e.message.trim().endsWith('No such file or directory') ? '' : e);
