@@ -18,7 +18,7 @@ async function mklapse(inputArgs) {
     {command: 'trails', name: 'reverse', alias: 'r', defaultValue: false, type: Boolean},
     {command: 'zoom', name: 'delta', alias: 'd', defaultValue: 1.001, type: Number},
     {command: 'resize', name: 'percentage', alias: 'p', defaultValue: '25%', type: String},
-    {command: 'fred', name: 'script', alias: 's', type: String},
+    {command: 'script', name: 'script', alias: 's', type: String},
     {command: 'planet'},
     {command: 'play'},
     {command: 'video', name: 'framerate', alias: 'r', defaultValue: 30, type: Number}
@@ -63,15 +63,10 @@ async function mkphotos({validFiles, options}) {
       case 'resize':
         command = `convert -resize ${options.percentage} ${inputFile} ${outputFile}`;
         break;
-      // case 'fred':
-      //   command = `bash ${scriptPath}/../lib/fred/${options.script} -p linear ${inputFile} ${outputFile}`;
-      //   break;
-      case 'fred':
-        command = `bash ${scriptPath}/../lib/fred/${options.script} -ca white -cr black ${inputFile} ${outputFile}`;
+      case 'script':
+        // options.script e.g. 'nameOfScriptInScriptsDir -args here -yo 2'
+        command = `bash ${scriptPath}/../user-scripts/${options.script.split(' ')[0]} ${options.script.split(' ').length > 1 ? ' ' + options.script.split(' ').slice(1).join(' ') : ''} ${inputFile} ${outputFile}`;
         break;
-      // case 'fred':
-      //   command = `bash ${scriptPath}/../lib/fred/${options.script} -sa 100 -ha 100 ${inputFile} ${outputFile}`;
-      //   break;
       case 'planet':
         command = `convert ${inputFile} -distort arc 360 ${outputFile}`;
         break;
