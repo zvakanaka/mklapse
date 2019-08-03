@@ -14,6 +14,7 @@ module.exports = mklapse;
 
 async function mklapse(inputArgs) {
   const validFiles = filesInDir(pwd, ['jpg']);
+  // TODO: support multiple and unnamed options
   const optionsConfig = [
     {command: 'trails', name: 'reverse', alias: 'r', defaultValue: false, type: Boolean},
     {command: 'zoom', name: 'delta', alias: 'd', defaultValue: 1.001, type: Number},
@@ -55,9 +56,6 @@ async function mkphotos({validFiles, options}) {
         height *= options.delta;
         break;
       case 'trails':
-        command = `convert ${DEFUALT_TEMP_DIR}/IMG_${last}.jpg ${inputFile} -gravity center -compose lighten -composite -format jpg ${outputFile}`;
-        break;
-      case 'reverse-trails':
         command = `convert ${DEFUALT_TEMP_DIR}/IMG_${last}.jpg ${inputFile} -gravity center -compose lighten -composite -format jpg ${outputFile}`;
         break;
       case 'resize':
