@@ -1,11 +1,9 @@
 const {spawn} = require('child_process');
 const exec = require('util').promisify(require('child_process').exec);
-const sequentialPromiseAll = require('./lib/sequentialPromiseAll');
+const sequentialPromiseAll = require('sequential-promise-all');
 const barChart = require('bar-charts');
 const fileParts = require('./lib/fileParts');
-const fs = require('fs');
-const {promisify} = require('util');
-const readdir = promisify(fs.readdir);
+const filesInDir = require('files-in-dir');
 const understand = require('./lib/understand');
 const DEFUALT_TEMP_DIR = 'mklapse';
 const pwd = './';
@@ -15,15 +13,13 @@ const BLANK = '⠀'; // braille blank emoji (because jstrace-bars removes leadin
 module.exports = mklapse;
 
 async function mklapse(inputArgs) {
-  const files = await readdir(pwd);
-  const validFiles = files.filter(fileName => {
-    return fileName.toLowerCase().endsWith('.jpg');
-  });
+  const validFiles = filesInDir(pwd, ['jpg']);
   const optionsConfig = [
-    {command: 'trails'},
+    {command: 'trails', name: 'reverse', alias: 'r', defaultValue: false, type: Boolean},
     {command: 'zoom', name: 'delta', alias: 'd', defaultValue: 1.001, type: Number},
     {command: 'resize', name: 'percentage', alias: 'p', defaultValue: '25%', type: String},
     {command: 'fred', name: 'script', alias: 's', type: String},
+    {command: 'planet'},
     {command: 'play'},
     {command: 'video', name: 'framerate', alias: 'r', defaultValue: 30, type: Number}
   ];
@@ -40,6 +36,7 @@ async function mklapse(inputArgs) {
 async function mkphotos({validFiles, options}) {
   await clean();
   await mkdir(DEFUALT_TEMP_DIR);
+  if (options.reverse === true) validFiles.reverse();
   await exec(`cp ${validFiles[0]} ${DEFUALT_TEMP_DIR}/IMG_0000.jpg`);
   let last = '0000';
   let countString = last;
@@ -53,18 +50,30 @@ async function mkphotos({validFiles, options}) {
     let command;
     switch (options.command) {
       case 'zoom':
-        command = `convert ${inputFile} -resize ${width}x${height}^ -gravity center -extent ${originalWidth}x${originalHeight} ${outputFile}`;
+        command = `convert ${inputFile} -resize ${width}x${height}^ -gravity North -extent ${originalWidth}x${originalHeight} ${outputFile}`;
         width *= options.delta;
         height *= options.delta;
         break;
       case 'trails':
         command = `convert ${DEFUALT_TEMP_DIR}/IMG_${last}.jpg ${inputFile} -gravity center -compose lighten -composite -format jpg ${outputFile}`;
         break;
+      case 'reverse-trails':
+        command = `convert ${DEFUALT_TEMP_DIR}/IMG_${last}.jpg ${inputFile} -gravity center -compose lighten -composite -format jpg ${outputFile}`;
+        break;
       case 'resize':
         command = `convert -resize ${options.percentage} ${inputFile} ${outputFile}`;
         break;
+      // case 'fred':
+      //   command = `bash ${scriptPath}/../lib/fred/${options.script} -p linear ${inputFile} ${outputFile}`;
+      //   break;
       case 'fred':
-        command = `bash ${scriptPath}/../lib/fred/${options.script} ${inputFile} ${outputFile}`;
+        command = `bash ${scriptPath}/../lib/fred/${options.script} -ca white -cr black ${inputFile} ${outputFile}`;
+        break;
+      // case 'fred':
+      //   command = `bash ${scriptPath}/../lib/fred/${options.script} -sa 100 -ha 100 ${inputFile} ${outputFile}`;
+      //   break;
+      case 'planet':
+        command = `convert ${inputFile} -distort arc 360 ${outputFile}`;
         break;
       default:
         throw new Error(`Invalid operation type specified, '${options.command}'`);

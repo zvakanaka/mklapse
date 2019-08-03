@@ -29,6 +29,8 @@
   },
   "homepage": "https://github.com/zvakanaka/mklapse#readme",
   "dependencies": {
-    "bar-charts": "^1.0.2"
+    "bar-charts": "^1.0.2",
+    "files-in-dir": "^1.0.0",
+    "sequential-promise-all": "^1.0.2"
   }
 }
