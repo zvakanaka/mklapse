@@ -1,4 +1,4 @@
-const {spawn} = require('child_process');
+const { spawn } = require('child_process');
 const exec = require('util').promisify(require('child_process').exec);
 const barChart = require('bar-charts');
 const fileParts = require('./lib/fileParts');
@@ -19,10 +19,8 @@ async function mklapse(inputArgs) {
     {command: 'trails', name: 'reverse', alias: 'r', defaultValue: false, type: Boolean},
     {command: 'zoom', name: 'delta', alias: 'd', defaultValue: 1.001, type: Number},
     {command: 'resize', name: 'percentage', alias: 'p', defaultValue: '25%', type: String},
-    {command: 'all', name: 'script', alias: 's', type: String},
-    // {command: 'once', name: 'script', alias: 's', type: String},
+    {command: 'custom', name: 'script', alias: 's', type: String},
     {command: 'planet'},
-    {command: 'play'},
     {command: 'video', name: 'framerate', alias: 'r', defaultValue: 30, type: Number}
   ];
   // set up defaults
@@ -30,8 +28,6 @@ async function mklapse(inputArgs) {
 
   console.log('options', options);
   if (options.command === 'video') mkvideo(validFiles, options);
-  // else if (options.command === 'once') ;
-  else if (options.command === 'play') play();
   else if (optionsConfig.map(c => c.command).includes(options.command)) mkphotos({validFiles, options});
   else console.log('invalid parameter(s) specified');
 };
@@ -63,9 +59,9 @@ async function mkphotos({validFiles, options}) {
       case 'resize':
         command = `convert -resize ${options.percentage} ${inputFile} ${outputFile}`;
         break;
-      case 'all': // run a script for every photo
+      case 'custom': // run a custom script for every image in a directory
         // options.script e.g. 'nameOfScriptInScriptsDir -args here -yo 2'
-        command = `bash ${scriptPath}/../user-scripts/${options.script.split(' ')[0]} ${options.script.split(' ').length > 1 ? ' ' + options.script.split(' ').slice(1).join(' ') : ''} ${inputFile} ${outputFile}`;
+        command = `bash ${scriptPath}/../custom-scripts/${options.script.split(' ')[0]} ${options.script.split(' ').length > 1 ? ' ' + options.script.split(' ').slice(1).join(' ') : ''} ${inputFile} ${outputFile}`;
         break;
       case 'planet':
         command = `convert ${inputFile} -distort arc 360 ${outputFile}`;
@@ -79,18 +75,6 @@ async function mkphotos({validFiles, options}) {
   await sequentialCommands(commandsArray);
   console.log(`${commandsArray.length}/${commandsArray.length}`);
 }
-
-// async function once({validFiles, options}) {
-//   await clean();
-//   let [width, height] = await getPhotoDimensions(validFiles[0]);
-//   const originalWidth = width;
-//   const originalHeight = height;
-//
-//   const inputFile = validFiles[0];
-//   const outputFile = `${DEFUALT_TEMP_DIR}/IMG_${countString}.jpg`;
-//   // options.script e.g. 'nameOfScriptInScriptsDir -args here -yo 2'
-//   const command = `bash ${scriptPath}/../user-scripts/${options.script.split(' ')[0]} ${options.script.split(' ').length > 1 ? ' ' + options.script.split(' ').slice(1).join(' ') : ''} ${inputFile} ${outputFile}`;
-// }
 
 async function mkvideo(validFiles, options) {
   const {ext: extension, fileWithoutExt: filePrefix} = fileParts(validFiles[0]);
@@ -128,24 +112,6 @@ async function mkvideo(validFiles, options) {
   }
 }
 
-function play() {
-  const ffplayCommand = `ffplay -loop 0 ${DEFUALT_TEMP_DIR}.mp4`;
-  const args = ffplayCommand.split(' ').slice(1);
-  const ffplay = spawn('ffplay', args);
-
-  console.log('RUNNING', args);
-
-  ffplay.stdout.on('data', function(data) { console.log('data:', data); });
-  ffplay.stdout.on('end', function(data) {
-   console.log('end', data);
-  });
-  ffplay.on('exit', function(code) {
-    if (code != 0) {
-      console.log('Failed: ' + code);
-    }
-  });
-}
-
 async function mkdir(dirname) {
   const outputObj = await exec(`mkdir -p ${dirname}`);
   return outputObj;
@@ -159,7 +125,7 @@ async function getPhotoDimensions(fileName) {
 
 async function clean() {
   try {
-    console.log(`Removing temp dir '${DEFUALT_TEMP_DIR}'`);
+    // console.log(`Removing temp dir '${DEFUALT_TEMP_DIR}'`);
     const rmOutputObj = await exec(`rm -r ${DEFUALT_TEMP_DIR}`);
   } catch (e) {
     console.error(e.message.trim().endsWith('No such file or directory') ? '' : e);
