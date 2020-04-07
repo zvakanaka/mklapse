@@ -79,7 +79,7 @@ async function mkphotos({validFiles, options}) {
 async function mkvideo(validFiles, options) {
   const {ext: extension, fileWithoutExt: filePrefix} = fileParts(validFiles[0]);
   const [, startNumber] = filePrefix.match(/(\d{4})/);
-  const ffmpegCommand = `ffmpeg -y -framerate ${options.framerate} -start_number "${startNumber}" -i IMG_%04d.${extension} -s:v 1080x720 -c:v libx264 -pix_fmt yuv420p -r ${options.framerate} ${DEFUALT_TEMP_DIR}.mp4`;
+  const ffmpegCommand = `ffmpeg -hide_banner -y -framerate ${options.framerate} -start_number "${startNumber}" -i IMG_%04d.${extension} -s:v 1080x720 -c:v libx264 -pix_fmt yuv420p -r ${options.framerate} ${DEFUALT_TEMP_DIR}.mp4`;
   const args = ffmpegCommand.split(' ').slice(1);
   console.log('RUNNING', args);
   try {
